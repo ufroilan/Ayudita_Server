@@ -9,7 +9,7 @@ use crate::ticket::Paper;
 /// Dirección de Ayudita fijada al compilar (`AYUDITA_BASE_URL=... cargo build`).
 pub const DEFAULT_BASE_URL: &str = match option_env!("AYUDITA_BASE_URL") {
     Some(url) => url,
-    None => "https://ayudita-beta.vercel.app",
+    None => "https://www.ayuditas.app",
 };
 
 /// Dirección de Ayudita en desarrollo, la que se propone al activar el modo desarrollo.

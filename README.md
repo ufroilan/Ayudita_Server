@@ -82,7 +82,7 @@ AppIndicator). Si no hay bandeja, cerrar la ventana la minimiza.
 
 ### La dirección de Ayudita
 
-Va fija en la app: `https://ayudita-beta.vercel.app`. Se puede cambiar al compilar:
+Va fija en la app: `https://www.ayuditas.app`. Se puede cambiar al compilar:
 
 ```bash
 AYUDITA_BASE_URL=https://otra.direccion cargo build --release

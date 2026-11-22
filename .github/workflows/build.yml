@@ -33,7 +33,7 @@ jobs:
       - run: cargo test
       - run: cargo build --release
         env:
-          AYUDITA_BASE_URL: https://ayudita-beta.vercel.app
+          AYUDITA_BASE_URL: https://www.ayuditas.app
       - uses: actions/upload-artifact@v4
         with:
           name: ayudita-comandas-${{ runner.os }}
