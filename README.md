@@ -18,7 +18,8 @@ paquete de tu sistema:
 - **Windows** — `ayudita-comandas-windows.exe`. Haz doble clic. Si sale «Windows protegió su PC»,
   **Más información → Ejecutar de todas formas**.
 - **Linux** — `ayudita-comandas-linux.tar.gz`. Descomprímelo y ejecuta `instalar.sh`: la añade a
-  tus aplicaciones.
+  tus aplicaciones. Necesita `libxkbcommon-x11` y OpenGL, que traen todos los escritorios (en un
+  Ubuntu mínimo: `sudo apt install libxkbcommon-x11-0 libgl1`).
 
 ### Usarla
 
