@@ -3,64 +3,120 @@ name: build
 on:
   push:
     branches: ['**']
-    # Una etiqueta `v1.2.3` construye y además publica el release (job `release`).
+    # Una etiqueta `v1.2.3` construye, prueba y además publica el release (job `release`).
     tags: ['v*']
   pull_request:
   workflow_dispatch:
 
+env:
+  AYUDITA_BASE_URL: https://www.ayuditas.app
+
 jobs:
-  build:
+  # Un paquete por sistema, con el mismo nombre siempre: la app de Ayudita enlaza directamente a
+  # `releases/latest/download/<nombre>` según el sistema de quien la visita.
+  #
+  #   macOS    ayudita-comandas-macos.dmg      «Ayudita Comandas.app», Apple Silicon e Intel
+  #   Windows  ayudita-comandas-windows.exe    con su icono
+  #   Linux    ayudita-comandas-linux.tar.gz   la app, su icono e `instalar.sh`
+  #
+  # Y **se prueba lo que se publica**: se abre el paquete como lo abriría alguien, se arranca la
+  # app y se guarda una captura de su ventana (`AYUDITA_CAPTURA`). Si no arranca, no hay release.
+  package:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            artifact: ayudita-comandas
-            asset: ayudita-comandas-linux
-          - os: macos-latest
-            artifact: ayudita-comandas
-            asset: ayudita-comandas-macos
-          - os: windows-latest
-            artifact: ayudita-comandas.exe
-            asset: ayudita-comandas-windows.exe
+        os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
       - name: Dependencias de Linux
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libxkbcommon-dev libgl1-mesa-dev
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libxkbcommon-dev libgl1-mesa-dev libgl1-mesa-dri xvfb
       - run: cargo test
-      - run: cargo build --release
-        env:
-          AYUDITA_BASE_URL: https://www.ayuditas.app
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ayudita-comandas-${{ runner.os }}
-          path: target/release/${{ matrix.artifact }}
-      # El mismo binario con el nombre de su sistema: en el release van los tres
-      # juntos y tienen que distinguirse.
-      - name: Nombre del release
-        shell: bash
-        run: cp target/release/${{ matrix.artifact }} ${{ matrix.asset }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ runner.os }}
-          path: ${{ matrix.asset }}
 
-  # **El release**, sólo con una etiqueta `v*`. La app de Ayudita enlaza a
-  # `releases/latest` (Ajustes → Notificaciones, `app/config/downloads.ts`), así
-  # que cada etiqueta nueva es lo que descarga la gente, sin tocar la app.
+      - name: Paquete de macOS
+        if: runner.os == 'macOS'
+        run: sh scripts/package-macos.sh
+      - name: Paquete de Linux
+        if: runner.os == 'Linux'
+        run: sh scripts/package-linux.sh
+      - name: Paquete de Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cargo build --release
+          mkdir -p dist
+          cp target/release/ayudita-comandas.exe dist/ayudita-comandas-windows.exe
+
+      # La prueba: datos en una carpeta temporal, la sesión en un archivo (sin llavero) y una
+      # captura a los 3 s, tras la que la app se cierra sola.
+      - name: Probar en macOS (desde el .dmg)
+        if: runner.os == 'macOS'
+        run: |
+          hdiutil attach dist/ayudita-comandas-macos.dmg -mountpoint /tmp/dmg -nobrowse
+          cp -R "/tmp/dmg/Ayudita Comandas.app" /tmp/
+          hdiutil detach /tmp/dmg
+          codesign --verify --deep --strict "/tmp/Ayudita Comandas.app"
+          lipo -archs "/tmp/Ayudita Comandas.app/Contents/MacOS/ayudita-comandas"
+          AYUDITA_DATOS=/tmp/datos AYUDITA_SESION_EN_ARCHIVO=1 AYUDITA_CAPTURA="$PWD/captura-macos.png" AYUDITA_CAPTURA_SALIR=1 \
+            "/tmp/Ayudita Comandas.app/Contents/MacOS/ayudita-comandas" &
+          pid=$!; for i in $(seq 1 60); do sleep 1; kill -0 $pid 2>/dev/null || break; done
+          kill $pid 2>/dev/null || true
+          test -s captura-macos.png
+      - name: Probar en Linux (desde el .tar.gz)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p /tmp/linux && tar -xzf dist/ayudita-comandas-linux.tar.gz -C /tmp/linux
+          test -x /tmp/linux/ayudita-comandas/ayudita-comandas
+          HOME=/tmp/casa sh /tmp/linux/ayudita-comandas/instalar.sh
+          test -x /tmp/casa/.local/bin/ayudita-comandas
+          AYUDITA_DATOS=/tmp/datos AYUDITA_SESION_EN_ARCHIVO=1 AYUDITA_CAPTURA="$PWD/captura-linux.png" AYUDITA_CAPTURA_SALIR=1 \
+            LIBGL_ALWAYS_SOFTWARE=1 timeout 90 xvfb-run -a -s "-screen 0 1600x1200x24" /tmp/casa/.local/bin/ayudita-comandas || true
+          test -s captura-linux.png
+      # Las máquinas de Windows de GitHub no tienen OpenGL moderno: se le da el de software de Mesa
+      # (sólo para la prueba; en un ordenador de verdad lo pone la tarjeta gráfica).
+      - name: OpenGL de software para la prueba de Windows
+        if: runner.os == 'Windows'
+        uses: ssciwr/setup-mesa-dist-win@v2
+      - name: Probar en Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:AYUDITA_DATOS = "$env:RUNNER_TEMP\datos"
+          $env:AYUDITA_SESION_EN_ARCHIVO = "1"
+          $env:AYUDITA_CAPTURA = "$PWD\captura-windows.png"
+          $env:AYUDITA_CAPTURA_SALIR = "1"
+          $p = Start-Process -FilePath "dist\ayudita-comandas-windows.exe" -PassThru
+          if (-not $p.WaitForExit(90000)) { Stop-Process -Id $p.Id -Force }
+          if (-not (Test-Path captura-windows.png)) { throw "La app no llegó a pintar su ventana" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: captura-${{ runner.os }}
+          path: captura-*.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paquete-${{ runner.os }}
+          path: |
+            dist/ayudita-comandas-macos.dmg
+            dist/ayudita-comandas-windows.exe
+            dist/ayudita-comandas-linux.tar.gz
+          if-no-files-found: error
+
+  # **El release**, sólo con una etiqueta `v*` y sólo si los tres paquetes arrancaron.
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: package
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: release-*
+          pattern: paquete-*
           merge-multiple: true
           path: dist
       - uses: softprops/action-gh-release@v2

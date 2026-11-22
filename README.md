@@ -6,6 +6,22 @@ Realtime del negocio y manda cada comanda a la impresora por ESC/POS.
 
 ## Para quien la usa
 
+### Instalar
+
+Se descarga desde Ayudita (Ajustes → Notificaciones → **Impresora de comandas**), que da el
+paquete de tu sistema:
+
+- **macOS** — `ayudita-comandas-macos.dmg`. Ábrelo y arrastra **Ayudita Comandas** a
+  Aplicaciones. La primera vez, macOS avisa de que la app no viene del App Store: clic derecho
+  sobre ella → **Abrir** (en macOS 15, Ajustes del Sistema → Privacidad y seguridad → **Abrir
+  igualmente**).
+- **Windows** — `ayudita-comandas-windows.exe`. Haz doble clic. Si sale «Windows protegió su PC»,
+  **Más información → Ejecutar de todas formas**.
+- **Linux** — `ayudita-comandas-linux.tar.gz`. Descomprímelo y ejecuta `instalar.sh`: la añade a
+  tus aplicaciones.
+
+### Usarla
+
 1. Abre la app.
 2. Escribe el correo y la contraseña de Ayudita y pulsa **Entrar**.
 3. En **Impresora**, pulsa **Usar esta impresora** (la predeterminada del sistema) o elige otra.
@@ -194,14 +210,26 @@ El filtro por `place.type` (para separar cocina y barra) está preparado en `con
 
 ## Publicar una versión
 
-La app de Ayudita enlaza a `https://github.com/ufroilan/Ayudita_Server/releases/latest`
-(Ajustes → Notificaciones → **Impresora de comandas**). Ese enlace lo llena el workflow
-`.github/workflows/build.yml`: al empujar una etiqueta `v*` construye en macOS, Windows y Linux y
-publica un release con los tres ejecutables (`ayudita-comandas-macos`, `-windows.exe`, `-linux`).
+Al empujar una etiqueta `v*`, `.github/workflows/build.yml` construye en macOS, Windows y Linux,
+**abre cada paquete y arranca la app** (con una captura de su ventana, que queda como artefacto) y,
+sólo si los tres arrancan, publica el release con:
+
+| Sistema | Archivo | Qué es |
+| --- | --- | --- |
+| macOS | `ayudita-comandas-macos.dmg` | «Ayudita Comandas.app», Apple Silicon e Intel, firmada ad hoc (`scripts/package-macos.sh`) |
+| Windows | `ayudita-comandas-windows.exe` | El ejecutable, con su icono (`build.rs`) |
+| Linux | `ayudita-comandas-linux.tar.gz` | La app, su icono e `instalar.sh` (`scripts/package-linux.sh`) |
+
+**Los nombres no cambian entre versiones**: la app de Ayudita enlaza a
+`releases/latest/download/<archivo>` según el sistema de quien la visita, así que una etiqueta
+nueva es lo que se descarga, sin tocar Ayudita.
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+# Sube la versión en Cargo.toml, y después:
+git tag v0.1.2
+git push origin v0.1.2
 ```
 
-Hasta que el repositorio exista en GitHub con al menos un release, el enlace de la app da 404.
+Los iconos (`assets/icon/`) salen del dibujo de `src/icon.rs`. Si cambia, se regeneran con
+`cargo run --example write_icons` y `iconutil -c icns assets/icon/AppIcon.iconset -o
+assets/icon/AppIcon.icns`, y se suben.
