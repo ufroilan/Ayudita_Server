@@ -8,7 +8,7 @@ Realtime del negocio y manda cada comanda a la impresora por ESC/POS.
 
 ### Instalar
 
-Se descarga desde Ayudita (Ajustes → Notificaciones → **Impresora de comandas**), que da el
+Se descarga desde Ayudita (Ajustes → **Comandas**), que da el
 paquete de tu sistema:
 
 - **macOS** — `ayudita-comandas-<versión>-macos.dmg`. Ábrelo y arrastra **Ayudita Comandas** a
