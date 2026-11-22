@@ -1,0 +1,69 @@
+name: build
+
+on:
+  push:
+    branches: ['**']
+    # Una etiqueta `v1.2.3` construye y además publica el release (job `release`).
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: ayudita-comandas
+            asset: ayudita-comandas-linux
+          - os: macos-latest
+            artifact: ayudita-comandas
+            asset: ayudita-comandas-macos
+          - os: windows-latest
+            artifact: ayudita-comandas.exe
+            asset: ayudita-comandas-windows.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Dependencias de Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libxkbcommon-dev libgl1-mesa-dev
+      - run: cargo test
+      - run: cargo build --release
+        env:
+          AYUDITA_BASE_URL: https://ayudita-beta.vercel.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ayudita-comandas-${{ runner.os }}
+          path: target/release/${{ matrix.artifact }}
+      # El mismo binario con el nombre de su sistema: en el release van los tres
+      # juntos y tienen que distinguirse.
+      - name: Nombre del release
+        shell: bash
+        run: cp target/release/${{ matrix.artifact }} ${{ matrix.asset }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ runner.os }}
+          path: ${{ matrix.asset }}
+
+  # **El release**, sólo con una etiqueta `v*`. La app de Ayudita enlaza a
+  # `releases/latest` (Ajustes → Notificaciones, `app/config/downloads.ts`), así
+  # que cada etiqueta nueva es lo que descarga la gente, sin tocar la app.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
