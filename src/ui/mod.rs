@@ -293,6 +293,30 @@ impl App {
                         .color(p.text),
                 );
             }
+            // **Salir, de un clic, aquí mismo.** Sólo se podía en Ajustes → Desarrollo, una
+            // pestaña que se esconde tras Option/Alt + D; y como la configuración sobrevive a
+            // reinstalar, quien había probado la app en desarrollo la abría siempre así sin saber
+            // cómo volver. Apaga las dos cosas que enciende el modo: la dirección y la impresora
+            // virtual.
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                if ghost_button(
+                    ui,
+                    RichText::new("Salir del modo desarrollo")
+                        .size(11.5)
+                        .color(p.warning),
+                )
+                .clicked()
+                {
+                    let mut next = cfg.clone();
+                    next.dev_mode = false;
+                    next.dev_virtual_printer = false;
+                    let reconnect = next.base_url() != cfg.base_url();
+                    self.shared.set_cfg(next);
+                    if reconnect {
+                        self.shared.send(ConnCmd::Reload);
+                    }
+                }
+            });
         });
     }
 

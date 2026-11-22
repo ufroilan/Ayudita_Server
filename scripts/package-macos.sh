@@ -1,6 +1,6 @@
 #!/bin/sh
 # El .dmg de macOS: «Ayudita Comandas.app» (Apple Silicon e Intel en un solo binario) y un
-# acceso a Aplicaciones para arrastrarla. Deja `dist/ayudita-comandas-macos.dmg`.
+# acceso a Aplicaciones para arrastrarla. Deja `dist/ayudita-comandas-<versión>-macos.dmg`.
 #
 #   sh scripts/package-macos.sh
 #   TARGETS=aarch64-apple-darwin sh scripts/package-macos.sh   # sólo Apple Silicon, más rápido
@@ -11,7 +11,7 @@ set -eu
 VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
 NAME="Ayudita Comandas"
 APP="dist/$NAME.app"
-DMG="dist/ayudita-comandas-macos.dmg"
+DMG="dist/ayudita-comandas-$VERSION-macos.dmg"
 
 rm -rf dist
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" dist/dmg

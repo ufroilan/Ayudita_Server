@@ -11,13 +11,13 @@ Realtime del negocio y manda cada comanda a la impresora por ESC/POS.
 Se descarga desde Ayudita (Ajustes → Notificaciones → **Impresora de comandas**), que da el
 paquete de tu sistema:
 
-- **macOS** — `ayudita-comandas-macos.dmg`. Ábrelo y arrastra **Ayudita Comandas** a
+- **macOS** — `ayudita-comandas-<versión>-macos.dmg`. Ábrelo y arrastra **Ayudita Comandas** a
   Aplicaciones. La primera vez, macOS avisa de que la app no viene del App Store: clic derecho
   sobre ella → **Abrir** (en macOS 15, Ajustes del Sistema → Privacidad y seguridad → **Abrir
   igualmente**).
-- **Windows** — `ayudita-comandas-windows.exe`. Haz doble clic. Si sale «Windows protegió su PC»,
+- **Windows** — `ayudita-comandas-<versión>-windows.exe`. Haz doble clic. Si sale «Windows protegió su PC»,
   **Más información → Ejecutar de todas formas**.
-- **Linux** — `ayudita-comandas-linux.tar.gz`. Descomprímelo y ejecuta `instalar.sh`: la añade a
+- **Linux** — `ayudita-comandas-<versión>-linux.tar.gz`. Descomprímelo y ejecuta `instalar.sh`: la añade a
   tus aplicaciones. Necesita `libxkbcommon-x11` y OpenGL, que traen todos los escritorios (en un
   Ubuntu mínimo: `sudo apt install libxkbcommon-x11-0 libgl1`).
 
@@ -217,18 +217,19 @@ sólo si los tres arrancan, publica el release con:
 
 | Sistema | Archivo | Qué es |
 | --- | --- | --- |
-| macOS | `ayudita-comandas-macos.dmg` | «Ayudita Comandas.app», Apple Silicon e Intel, firmada ad hoc (`scripts/package-macos.sh`) |
-| Windows | `ayudita-comandas-windows.exe` | El ejecutable, con su icono (`build.rs`) |
-| Linux | `ayudita-comandas-linux.tar.gz` | La app, su icono e `instalar.sh` (`scripts/package-linux.sh`) |
+| macOS | `ayudita-comandas-<versión>-macos.dmg` | «Ayudita Comandas.app», Apple Silicon e Intel, firmada ad hoc (`scripts/package-macos.sh`) |
+| Windows | `ayudita-comandas-<versión>-windows.exe` | El ejecutable, con su icono (`build.rs`) |
+| Linux | `ayudita-comandas-<versión>-linux.tar.gz` | La app, su icono e `instalar.sh` (`scripts/package-linux.sh`) |
 
-**Los nombres no cambian entre versiones**: la app de Ayudita enlaza a
-`releases/latest/download/<archivo>` según el sistema de quien la visita, así que una etiqueta
-nueva es lo que se descarga, sin tocar Ayudita.
+**La versión va en el nombre** y sale de `Cargo.toml`. Ayudita pregunta a la API de GitHub cuál es
+el último release y enlaza a cada archivo por cómo termina (`-macos.dmg`, `-windows.exe`,
+`-linux.tar.gz`): una etiqueta nueva es lo que se descarga, sin tocar Ayudita. **No cambies esos
+finales** sin cambiar también `app/config/downloads.ts` en Ayudita.
 
 ```bash
-# Sube la versión en Cargo.toml, y después:
-git tag v0.1.2
-git push origin v0.1.2
+# Sube la versión en Cargo.toml, y después (el CI comprueba que coinciden):
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
 Los iconos (`assets/icon/`) salen del dibujo de `src/icon.rs`. Si cambia, se regeneran con

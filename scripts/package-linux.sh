@@ -1,9 +1,10 @@
 #!/bin/sh
 # El paquete de Linux: un .tar.gz (que, a diferencia de un binario suelto, conserva el permiso de
 # ejecución) con la app, su icono y un `instalar.sh` que la añade al menú de aplicaciones.
-# Deja `dist/ayudita-comandas-linux.tar.gz`.
+# Deja `dist/ayudita-comandas-<versión>-linux.tar.gz`.
 set -eu
 
+VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
 DIR="dist/ayudita-comandas"
 rm -rf dist
 mkdir -p "$DIR"
@@ -34,5 +35,5 @@ echo "Listo: busca «Ayudita Comandas» en tus aplicaciones."
 SH
 chmod +x "$DIR/instalar.sh" "$DIR/ayudita-comandas"
 
-tar -C dist -czf dist/ayudita-comandas-linux.tar.gz ayudita-comandas
-echo "✓ dist/ayudita-comandas-linux.tar.gz"
+tar -C dist -czf "dist/ayudita-comandas-$VERSION-linux.tar.gz" ayudita-comandas
+echo "✓ dist/ayudita-comandas-$VERSION-linux.tar.gz"

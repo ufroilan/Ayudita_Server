@@ -1,6 +1,6 @@
 [package]
 name = "ayudita-comandas"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "Imprime las comandas de Ayudita en una impresora térmica"
 
